@@ -156,6 +156,7 @@ bool g_useColors = isatty(STDOUT_FILENO);
 bool g_trueColor = isTrueColorTerminal();
 #endif
 bool g_setBackgroundColor = false;
+bool g_blankLine = true;
 
 
 bool strEqual(char const* a, char const* b) {
@@ -380,25 +381,20 @@ void abortHandler(int signo) {
 
 void catFile(FILE* fh) {
 	int c;
-	bool empty = true;
 	while ((c = getc(fh)) >= 0) {
 		if (c == '\n') {
 			resetColor();
+			g_blankLine = true;
+		}
+		else if (g_blankLine && (g_changeEmpty ||
+				(c != ' ' && c != '\t' && c != '\r'))) {
+			setColor(g_colorQueue[g_currentRow++]);
+			if (g_currentRow == g_colorQueue.size()) {
+				g_currentRow = 0;
+			}
+			g_blankLine = false;
 		}
 		putc(c, stdout);
-		if (c == '\n') {
-			if (g_changeEmpty || !empty) {
-				g_currentRow++;
-				if (g_currentRow == g_colorQueue.size()) {
-					g_currentRow = 0;
-				}
-			}
-			setColor(g_colorQueue[g_currentRow]);
-			empty = true;
-		}
-		else if (c != ' ' && c != '\t' && c != '\r') {
-			empty = false;
-		}
 	}
 }
 
@@ -438,8 +434,6 @@ int main(int argc, char** argv) {
 	if (g_colorQueue.empty()) {
 		pushFlag(allFlags.at("lgbt"));
 	}
-
-	setColor(g_colorQueue[0]);
 
 	if (g_filesToCat.empty()) {
 		catFile(stdin);
