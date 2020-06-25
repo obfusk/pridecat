@@ -300,6 +300,7 @@ void parseCommandLine(int argc, char** argv) {
 				}
 				if (g_useColors) {
 					putc(' ', stdout);
+					g_isatty = false;
 					for (const auto& color : flag.second.colors) {
 						setBackgroundColor(color);
 						putc(' ', stdout);
